@@ -1,7 +1,8 @@
 import { ScanStatus, WechatyBuilder,types } from '@juzi/wechaty'
 import QrcodeTerminal from 'qrcode-terminal'
+import readline from 'readline'
 
-const token = 'puppet_workpro_example_token' // put your token here
+const token = 'puppet_workpro_c0316288a73343cba983ed1a9d5dc179' // put your token here
 const bot = WechatyBuilder.build({
   puppet: '@juzi/wechaty-puppet-service',
   puppetOptions: {
@@ -15,6 +16,20 @@ const bot = WechatyBuilder.build({
 
 const store = {
   qrcodeKey: '',
+}
+
+async function getVerifyCodeFromUser(): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question('Enter the verification code: ', (code) => {
+      rl.close();
+      resolve(code);
+    });
+  });
 }
 
 bot.on('scan', (qrcode, status, data) => {
@@ -34,7 +49,7 @@ bot.on('scan', (qrcode, status, data) => {
   // 这与底层轮询二维码状态的时间间隔有关。
   if (status === types.VerifyCodeStatus.WAITING && scene === types.VerifyCodeScene.LOGIN && id === store.qrcodeKey) {
     console.log(`receive verify-code event, id: ${id}, message: ${message}, scene: ${types.VerifyCodeScene[scene]} status: ${types.VerifyCodeStatus[status]}`)
-    const verifyCode = '123456' // 通过一些途径输入验证码
+    const verifyCode = await getVerifyCodeFromUser() // 通过一些途径输入验证码
     try {
       await bot.enterVerifyCode(id, verifyCode) // 如果没抛错，则说明输入成功，会推送登录事件
       return
@@ -70,3 +85,4 @@ const getQrcodeKey = (urlStr: string) => {
   const url = new URL(urlStr);
   return url.searchParams.get('key');
 }
+
