@@ -1,6 +1,7 @@
 import { ScanStatus, WechatyBuilder, types } from '@juzi/wechaty';
-import { WechatyInterface } from '@juzi/wechaty/impls';
+import { MessageInterface, WechatyInterface } from '@juzi/wechaty/impls';
 import { ProcessMessage } from '../../types/process';
+import { CustomerSupportService } from '../customer-support';
 
 // Token for wechaty
 const token = 'puppet_workpro_4a075759562f477aaab5985e0c498978';
@@ -15,6 +16,7 @@ class PuppetWorker {
   private puppet: WechatyInterface;
   qrcodeKey: string = '';
   private lastVerifyCodeId: string = '';
+  private chatService: CustomerSupportService | undefined;
 
   constructor(){
     const clientId = process.argv[3];
@@ -60,10 +62,12 @@ class PuppetWorker {
       user: ${JSON.stringify(user)}, friend: ${user.friend()}, ${user.coworker()}
       ============================================
       `)
-    }).on('message', async message => {
-      console.log(`new message received: ${JSON.stringify(message)}`);
-      // await message.say(await answerQuestion('bbb', 'aaa'));
-    }).on('error', err => {
+      this.chatService = new CustomerSupportService();
+    }).on('logout', (user) => {
+      console.log(`user ${user} logout`)
+    }).on('message', 
+      this.onMessage
+    ).on('error', err => {
       console.log(err)
     }).on('room-announce', (...args) => {
       console.log(`room announce: ${JSON.stringify(args)}`)
@@ -100,6 +104,18 @@ class PuppetWorker {
     process.once('exit', () => {
       this.puppet.stop();
     });
+  }
+
+  // On receive puppet message
+  async onMessage(message: MessageInterface){
+    console.log(`new message received: ${JSON.stringify(message)}`);
+    if(this.chatService){
+      const sender = message.talker();
+      if(!sender.self()){
+        // Not myself's words
+        // await message.say(await this.chatService.say(message.text(), `${message.room()?.id ?? ''}_${sender.id}`));
+      }
+    }
   }
 
   init(){

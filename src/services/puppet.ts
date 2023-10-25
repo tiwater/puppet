@@ -2,7 +2,7 @@ import { ChildProcess, fork, spawn } from 'child_process';
 import path from 'path';
 import { WebSocketService } from './websocket';
 import { WebSocketServiceStatus, WebSocketServiceType } from '../types/websocket';
-import { PuppetProcessManager } from '../utils/process-manager';
+import { PuppetProcessManager } from './process-manager';
 import { ProcessMessage } from '../types/process';
 
 
