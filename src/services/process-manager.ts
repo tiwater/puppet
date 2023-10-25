@@ -7,7 +7,7 @@ export class ProcessManager {
   private processes: Map<string, ChildProcess> = new Map();
 
   // Start worker process for service/client
-  async startProcess(serviceId: WebSocketServiceType, clientId: string, worker: string): Promise<ChildProcess> {
+  startProcess(serviceId: WebSocketServiceType, clientId: string, worker: string): ChildProcess {
     
     const child = fork(worker, [serviceId.toString(), clientId], {
       // Worker is located in the worker folder
@@ -40,8 +40,8 @@ export class PuppetProcessManager extends ProcessManager{
   private timeouts: Map<string, NodeJS.Timeout> = new Map();
 
   // Start worker process for service/client
-  async startProcess(serviceId: WebSocketServiceType, clientId: string, worker: string): Promise<ChildProcess> {
-    const child = await super.startProcess(serviceId, clientId, worker);
+  startProcess(serviceId: WebSocketServiceType, clientId: string, worker: string): ChildProcess {
+    const child = super.startProcess(serviceId, clientId, worker);
 
     // Terminate the child process in 3 minutes by default
     const timeout = setTimeout(() => {

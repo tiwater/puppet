@@ -5,9 +5,13 @@
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node src/index.ts",
-    "build": "tsc",
-    "start": "NODE_ENV=production node dist/index.js"
+    "build": "next build && tsc",
+    "combine-intl": "yq -o json -i '. *=n load(\"src/messages/en.json\")' src/messages/zh.json",
+    "dev": "ts-node server.ts",
+    "lint": "next lint",
+    "prepare": "husky install",
+    "release": "standard-version",
+    "start": "NODE_ENV=production node dist/server.js"
   },
   "repository": {
     "type": "git",
@@ -22,10 +26,33 @@
   "homepage": "https://github.com/juzibot/workpro-getting-started#readme",
   "dependencies": {
     "@juzi/wechaty": "^1.0.66",
-    "socket.io-client": "^4.7.2"
+    "socket.io-client": "^4.7.2",
+    "@headlessui/react": "^1.7.16",
+    "@types/node": "20.4.5",
+    "@types/react": "18.2.17",
+    "@types/react-dom": "18.2.7",
+    "autoprefixer": "10.4.14",
+    "bufferutil": "^4.0.8",
+    "cheerio": "1.0.0-rc.12",
+    "clsx": "^2.0.0",
+    "daisyui": "^3.5.0",
+    "eslint": "8.46.0",
+    "eslint-config-next": "13.4.12",
+    "next": "13.4.12",
+    "postcss": "8.4.27",
+    "qrcode.react": "^3.1.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-icons": "^4.10.1",
+    "tailwindcss": "3.3.3",
+    "typescript": "5.1.6",
+    "utf-8-validate": "^6.0.3",
+    "uuid": "^9.0.1",
+    "socket.io": "^4.7.2"
   },
   "devDependencies": {
     "@types/node": "^20.8.7",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "husky": "^8.0.3"
   }
 }
