@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { io as socketIOClient, Socket } from 'socket.io-client';
+import { PUPPET_SERVICE_PATH, PuppetEvent, PuppetLoginStatus } from '@/types/puppet-event';
 import QRCode from 'qrcode.react';
 
 enum WebSocketServiceType {
@@ -16,14 +17,36 @@ const WechatyPuppet = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [clientId, setClientId] = useState('');
   const [allowRefresh, setAllowRefresh] = useState(false);
+  const [timoutTracker, setTimoutTracker] = useState<any>(null);
+
+  const initTimeoutTracker = (socket: Socket)=>{
+
+    const tracker = setTimeout(() => {
+      setQrCode('');
+      setMessage('二维码失效');
+      socket.disconnect();
+    }, 180000);
+    setTimoutTracker(tracker);
+
+  }
+
+  const clearTimeoutTracker = ()=>{
+
+    if(timoutTracker){
+      clearTimeout(timoutTracker);
+      setTimoutTracker(null);
+    }
+  }
   
   const initSocket = () => {
     if (socket) {
       socket.disconnect();
     }
 
-    // const url = process.env.NEXT_PUBLIC_TITAN_SERVICE || 'http://localhost:4000';
-    const newSocket: Socket = socketIOClient();
+    const url = process.env.NEXT_PUBLIC_TITAN_SERVICE || 'http://localhost:7000';
+    const newSocket: Socket = socketIOClient(url, {
+      path: PUPPET_SERVICE_PATH
+    });
 
     const serviceId = WebSocketServiceType.ZionSupport;
 
@@ -31,32 +54,51 @@ const WechatyPuppet = () => {
       console.log('Socket.IO connected');
       // TODO: Get userId
 
-      newSocket.emit('request-puppet', serviceId, clientId);
-      setTimeout(() => {
-        setQrCode('');
-        setMessage('二维码失效');
-        newSocket.disconnect();
-      }, 180000);
+      newSocket.emit(PuppetEvent.clientRequestPuppet, serviceId, clientId);
+      initTimeoutTracker(newSocket);
     });
 
-    newSocket.on('authToken', (authToken) => {
+    newSocket.on(PuppetEvent.puppetDispatchAuthToken, (authToken) => {
       setAllowRefresh(true);
       setQrCode(authToken);
+      setMessage('');
     });
 
-    newSocket.on('requestVerifyCode', () => {
+    newSocket.on(PuppetEvent.puppetRequestVerifyCode, () => {
       setMessage('');
       setVerifyLogin(true);
     });
 
-    newSocket.on('verifyCodeResult', (result) => {
+    newSocket.on(PuppetEvent.puppetVerifyResult, (result) => {
       if(result == 'ok') {
-        setMessage('登录成功');
+        setMessage('验证通过');
       } else {
         setMessage(`错误：${result}`);
+        newSocket.disconnect();
+        setSocket(null);
       }
+    });
+
+    newSocket.on(PuppetEvent.puppetLoginStatus, (result) => {
+      if(result == PuppetLoginStatus.login) {
+        setMessage('成功登录');
+        newSocket.disconnect();
+        setSocket(null);
+        setQrCode('');
+        setVerifyLogin(false);
+        clearTimeoutTracker();
+      } else if(result == PuppetLoginStatus.logout){
+        setMessage(`退出登录`);
+      }
+    });
+
+    newSocket.on(PuppetEvent.puppetError, (err) => {
+      setMessage('出错了，请重试');
       newSocket.disconnect();
       setSocket(null);
+      setQrCode('');
+      setVerifyLogin(false);
+      clearTimeoutTracker();
     });
 
     newSocket.on('disconnect', () => {
@@ -73,7 +115,7 @@ const WechatyPuppet = () => {
 
   const submitVerificationCode = () => {
     if(socket) {
-      socket.emit('verifyCode', verificationCode);
+      socket.emit(PuppetEvent.clientSubmitVerifyCode, verificationCode);
     }
   };
 

@@ -34,36 +34,3 @@ export class ProcessManager {
     return this.processes.get(clientId);
   }
 }
-
-// Manage puppet processes
-export class PuppetProcessManager extends ProcessManager{
-  private timeouts: Map<string, NodeJS.Timeout> = new Map();
-
-  // Start worker process for service/client
-  startProcess(serviceId: WebSocketServiceType, clientId: string, worker: string): ChildProcess {
-    const child = super.startProcess(serviceId, clientId, worker);
-
-    // Terminate the child process in 3 minutes by default
-    const timeout = setTimeout(() => {
-      this.terminateProcess(clientId);
-    }, 3 * 60 * 1000);
-    this.timeouts.set(clientId, timeout);
-    return child;
-  }
-
-  // Terminate the child process
-  terminateProcess(clientId: string): void {
-    super.terminateProcess(clientId);
-
-    this.disableTimeout(clientId);
-  }
-
-  // Disable the timeout for child process
-  disableTimeout(clientId: string): void {
-    const timeout = this.timeouts.get(clientId);
-    if (timeout) {
-      clearTimeout(timeout);
-      this.timeouts.delete(clientId);
-    }
-  }
-}
