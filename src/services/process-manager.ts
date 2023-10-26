@@ -7,15 +7,15 @@ export class ProcessManager {
   private processes: Map<string, ChildProcess> = new Map();
 
   // Start worker process for service/client
-  startProcess(serviceId: WebSocketServiceType, clientId: string, worker: string): ChildProcess {
+  startProcess(worker: string, key: string, args: string[]): ChildProcess {
     
-    const child = fork(worker, [serviceId.toString(), clientId], {
+    const child = fork(worker, args, {
       // Worker is located in the worker folder
       cwd: path.resolve(__dirname, "worker"),
       // Use the three standard methods and ipc for the communication between the parent and children processes
       stdio: [0, 1, 2, "ipc"],
     });
-    this.processes.set(clientId, child);
+    this.processes.set(key, child);
     return child;
   }
 

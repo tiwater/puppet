@@ -23,13 +23,14 @@ class PuppetWorker {
 
   constructor(){
     const clientId = process.argv[3];
-    // const token = tokens[clientId == 'shaoyie' ? 0 : 1];
+    const token = process.argv[4];
 
     // Create puppet for the client
     this.puppet = WechatyBuilder.build({
       name: clientId,
       puppet: '@juzi/wechaty-puppet-service',
       puppetOptions: {
+        name: clientId,
         token,
         tls: {
           disable: true

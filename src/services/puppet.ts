@@ -5,18 +5,60 @@ import { ProcessMessage } from '../types/process';
 import { Socket } from 'socket.io';
 import { PuppetEvent, PuppetLoginStatus } from '../types/puppet-event';
 
+class Token {
+  value: string;
+  isOccupied: boolean;
+
+  constructor(value: string) {
+    this.value = value;
+    this.isOccupied = false;
+  }
+}
+
+class TokenManager {
+  private tokens: Token[];
+
+  constructor(initialTokens: string[]) {
+    this.tokens = initialTokens.map(tokenValue => new Token(tokenValue));
+  }
+
+  requestToken(): string | null {
+    const availableToken = this.tokens.find(token => !token.isOccupied);
+
+    if (!availableToken) {
+      return null;
+    }
+
+    availableToken.isOccupied = true;
+    return availableToken.value;
+  }
+
+  releaseToken(tokenValue: string): void {
+    const token = this.tokens.find(token => token.value === tokenValue);
+
+    if (token) {
+      token.isOccupied = false;
+    } else {
+      throw new Error(`Token ${tokenValue} not found.`);
+    }
+  }
+}
+
 export class Puppet {
   socket: Socket | null;
   serviceId: WebSocketServiceType;
   clientId: string;
   process: ChildProcess;
+  token: string;
   state: PuppetLoginStatus = PuppetLoginStatus.pending;
 
-  constructor(serviceId: WebSocketServiceType, clientId: string, socket: Socket, process: ChildProcess){
+  constructor(serviceId: WebSocketServiceType, clientId: string, socket: Socket, 
+    token: string, process: ChildProcess){
     this.socket = socket;
     this.serviceId = serviceId;
     this.process = process;
     this.clientId = clientId;
+    this.token = token;
   }
 
   init(){
@@ -105,6 +147,7 @@ export class PuppetService {
   static instance: PuppetService;
 
   processManager = new ProcessManager();
+  tokenManager;
   private serviceId;
   private puppets: Map<string, Puppet> = new Map();
   private timeouts: Map<string, NodeJS.Timeout> = new Map();
@@ -118,6 +161,7 @@ export class PuppetService {
   
   private constructor(serviceId: WebSocketServiceType) {
     this.serviceId = serviceId;
+    this.tokenManager = new TokenManager(JSON.parse(process.env.PUPPET_TOKENS ?? '[]'));
   }
 
   createPuppet(serviceId: WebSocketServiceType, clientId: string, socket: Socket) {
@@ -128,27 +172,38 @@ export class PuppetService {
       // Update the socket of the existing puppet
       existingPuppet.updateSocket(socket);
     } else {
-      // Start worker process for wechaty puppet
-      const puppetWorker = this.processManager.startProcess(serviceId, clientId,
-        process.env.NODE_ENV == 'production'?
-        './puppet-worker.js' : './puppet-worker.ts');
+      // Aquire token
+      const token = this.tokenManager.requestToken();
+      if(token){
+        // Start worker process for wechaty puppet
+        const puppetWorker = this.processManager.startProcess(
+          process.env.NODE_ENV == 'production'?
+          './puppet-worker.js' : './puppet-worker.ts', 
+          clientId, 
+          [serviceId.toString(), clientId, token]);
 
-      const puppet = new Puppet(serviceId, clientId, socket, puppetWorker);
-      // Init the worker
-      puppet.init();
-      this.puppets.set(clientId, puppet);
+        const puppet = new Puppet(serviceId, clientId, socket, token, puppetWorker);
+        // Init the worker
+        puppet.init();
+        this.puppets.set(clientId, puppet);
 
-      // Terminate the child process in 3 minutes by default
-      const timeout = setTimeout(() => {
-        this.destoryPuppet(clientId);
-      }, 3 * 60 * 1000);
-      this.timeouts.set(clientId, timeout);
+        // Terminate the child process in 3 minutes by default
+        const timeout = setTimeout(() => {
+          this.destoryPuppet(clientId);
+        }, 3 * 60 * 1000);
+        this.timeouts.set(clientId, timeout);
+      } else {
+        socket.emit(PuppetEvent.puppetError, 'No available headcount');
+        socket.disconnect();
+        console.warn('No available headcount');
+      }
     }
   }
 
   destoryPuppet(clientId: string){
     const existingPuppet = this.puppets.get(clientId);
     if (existingPuppet) {
+      this.tokenManager.releaseToken(existingPuppet.token);
       existingPuppet.closeConnection();
     }
     this.disableTimeout(clientId);
