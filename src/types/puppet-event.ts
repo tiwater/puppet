@@ -7,11 +7,13 @@ export enum PuppetEvent {
   clientSubmitVerifyCode = 'client-submit-verify-code',
   puppetVerifyResult = 'puppet-verify-result',  // "ok" for success, others info for fail
   puppetLoginStatus = 'puppet-login-status',
+  clientRequestLogout = 'client-request-logout',
   puppetError = 'puppet-error',
 }
 
 export enum ControllerEvent {
-  requestPuppets = 'request-puppets',
+  listPuppets = 'list-puppets',
+  destroyPuppet = 'destroy-puppet',
 }
 
 export enum PuppetLoginStatus {

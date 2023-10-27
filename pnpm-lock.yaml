@@ -9,8 +9,8 @@ dependencies:
     specifier: ^1.7.16
     version: 1.7.16(react-dom@18.2.0)(react@18.2.0)
   '@juzi/wechaty':
-    specifier: ^1.0.66
-    version: 1.0.66(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(bufferutil@4.0.8)(redux@4.2.1)(rxjs@7.8.1)(utf-8-validate@6.0.3)
+    specifier: ^1.0.74
+    version: 1.0.74(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(bufferutil@4.0.8)(redux@4.2.1)(rxjs@7.8.1)(utf-8-validate@6.0.3)
   '@types/node':
     specifier: 20.4.5
     version: 20.4.5
@@ -617,8 +617,8 @@ packages:
       stronger-typed-streams: 0.2.0
     dev: false
 
-  /@juzi/wechaty-puppet-service@1.0.79(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(redux@4.2.1):
-    resolution: {integrity: sha512-kAoujdbipAusf+8dh1BFuPvgM9dDfZdMnLZfo7JP2OE158LxAIUTvfgECSjiqM/op4/L4RytLyQiLr/HY/k/QQ==}
+  /@juzi/wechaty-puppet-service@1.0.80(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(redux@4.2.1):
+    resolution: {integrity: sha512-zpOcxyw0DpDrerRj21SeQ6xiijOqIWVvCCb0vkoli0l6T45O9wS40O9eb8bQkUl7RvutCEOO+Lzr4JzctQRDnQ==}
     engines: {node: '>=16', npm: '>=7'}
     peerDependencies:
       '@juzi/wechaty-puppet': ^1.0.66
@@ -663,12 +663,12 @@ packages:
       - rxjs
     dev: false
 
-  /@juzi/wechaty@1.0.66(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(bufferutil@4.0.8)(redux@4.2.1)(rxjs@7.8.1)(utf-8-validate@6.0.3):
-    resolution: {integrity: sha512-wz4IjdsXiMQSJovdx0oGnw+xUaNKGTqflHgX0460O74WeyME3x/uiILEi7y+LXn39y5tdE3rlYyFcS80VeeBzQ==}
+  /@juzi/wechaty@1.0.74(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(bufferutil@4.0.8)(redux@4.2.1)(rxjs@7.8.1)(utf-8-validate@6.0.3):
+    resolution: {integrity: sha512-p/F9Q7ZxopGNRKB/VTp8bAxa/4GMzDnP4eV/i0mLx6Iq1xVM+cmrw8PUudzUQ3wMaifEFh3r/xnAOXLzVFhnAQ==}
     engines: {node: '>=16', npm: '>=7'}
     hasBin: true
     dependencies:
-      '@juzi/wechaty-puppet-service': 1.0.79(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(redux@4.2.1)
+      '@juzi/wechaty-puppet-service': 1.0.80(@juzi/wechaty-puppet@1.0.67)(brolog@1.14.2)(redux@4.2.1)
       clone-class: 1.1.3
       cmd-ts: 0.10.2
       cockatiel: 2.0.2

@@ -3,7 +3,7 @@ import { WebSocketServiceType } from '../types/websocket';
 import { ProcessManager } from './process-manager';
 import { ProcessMessage } from '../types/process';
 import { Socket } from 'socket.io';
-import { PuppetEvent, PuppetLoginStatus } from '../types/puppet-event';
+import { ControllerEvent, PuppetEvent, PuppetLoginStatus } from '../types/puppet-event';
 
 class Token {
   value: string;
@@ -77,7 +77,7 @@ export class Puppet {
         this.closeConnection();
       } else {
         // Destroy the client
-        PuppetService.getInstance().destoryPuppet(this.clientId);
+        PuppetService.getInstance(this.serviceId).destroyPuppet(this.clientId);
       }
     });
   }
@@ -107,11 +107,11 @@ export class Puppet {
         this.socket?.emit(PuppetEvent.puppetLoginStatus, message.data);
         if(message.data == PuppetLoginStatus.login){
           // Verify code passed, disable the timeout, so the puppet will serve for the customer
-          PuppetService.getInstance().disableTimeout(this.clientId);
+          PuppetService.getInstance(this.serviceId).disableTimeout(this.clientId);
         } else if(message.data == PuppetLoginStatus.logout){
           if(this.state == PuppetLoginStatus.login){
             // Logout
-            PuppetService.getInstance().destoryPuppet(this.clientId);
+            PuppetService.getInstance(this.serviceId).destroyPuppet(this.clientId);
           } else {
             // Just status update after connect, wait for later event
           }
@@ -120,7 +120,7 @@ export class Puppet {
       } else if(message.type == PuppetEvent.puppetError){
         // Tell the login client
         this.socket?.emit(PuppetEvent.puppetError, message.data);
-        PuppetService.getInstance().destoryPuppet(this.clientId);
+        PuppetService.getInstance(this.serviceId).destroyPuppet(this.clientId);
       }
     });
   }
@@ -136,6 +136,13 @@ export class Puppet {
     // Socket updated, send the login status
     this.socket?.emit(PuppetEvent.puppetLoginStatus, this.state);
   }
+
+  logout() {
+    if(this.state == PuppetLoginStatus.login){
+      console.log('Request logout');
+      this.process.send({ type: PuppetEvent.clientRequestLogout });
+    }
+  }
   
   closeConnection() {
     if(this.socket){
@@ -148,7 +155,7 @@ export class Puppet {
 
 export class PuppetService {
 
-  static instance: PuppetService;
+  private static instances: Map<WebSocketServiceType, PuppetService> = new Map();
 
   processManager = new ProcessManager();
   tokenManager;
@@ -156,11 +163,13 @@ export class PuppetService {
   private puppets: Map<string, Puppet> = new Map();
   private timeouts: Map<string, NodeJS.Timeout> = new Map();
 
-  static getInstance() {
-    if (!PuppetService.instance) {
-      PuppetService.instance = new PuppetService(WebSocketServiceType.ZionSupport);
+  static getInstance(serviceId: WebSocketServiceType) : PuppetService {
+    let service = PuppetService.instances.get(serviceId);
+    if (!service) {
+      service = new PuppetService(serviceId);
+      PuppetService.instances.set(serviceId, service);
     }
-    return PuppetService.instance;
+    return service;
   }
   
   private constructor(serviceId: WebSocketServiceType) {
@@ -184,7 +193,7 @@ export class PuppetService {
           process.env.NODE_ENV == 'production'?
           './puppet-worker.js' : './puppet-worker.ts', 
           clientId, 
-          [serviceId.toString(), clientId, token]);
+          [serviceId, clientId, token]);
 
         const puppet = new Puppet(serviceId, clientId, socket, token, puppetWorker);
         // Init the worker
@@ -193,8 +202,8 @@ export class PuppetService {
 
         // Terminate the child process in 3 minutes by default
         const timeout = setTimeout(() => {
-          this.destoryPuppet(clientId);
-        }, 3 * 60 * 1000);
+          this.destroyPuppet(clientId);
+        }, 30 * 60 * 1000);
         this.timeouts.set(clientId, timeout);
       } else {
         socket.emit(PuppetEvent.puppetError, 'No available headcount');
@@ -204,7 +213,7 @@ export class PuppetService {
     }
   }
 
-  destoryPuppet(clientId: string){
+  destroyPuppet(clientId: string){
     const existingPuppet = this.puppets.get(clientId);
     if (existingPuppet) {
       this.tokenManager.releaseToken(existingPuppet.token);
@@ -227,5 +236,42 @@ export class PuppetService {
   getPuppets(): Puppet[] {
     // Return the values of puppets as an array
     return Array.from(this.puppets.values());
+  }
+
+  getPuppet(clientId: string): Puppet | undefined {
+    return this.puppets.get(clientId);
+  }
+
+  static handleServiceRequest(socket: Socket): void {
+
+    // Register socket callback for puppy management services
+    // Get puppet list
+    socket.on(ControllerEvent.listPuppets, (service, callback) => {
+      const puppets = PuppetService.getInstance(service).getPuppets();
+      callback(puppets.map((v) => {
+        return {
+          clientId: v.clientId,
+          state: v.state,
+        };
+      }));
+      socket.disconnect();
+    });
+
+    // Destroy a puppet
+    socket.on(ControllerEvent.destroyPuppet, (service, clientId, callback) => {
+      const puppet = PuppetService.getInstance(service).getPuppet(clientId);
+      if (puppet) {
+        if(puppet.state === PuppetLoginStatus.login){
+          // Logout will trigger the destroy
+          puppet.logout();
+        } else {
+          PuppetService.getInstance(service).destroyPuppet(clientId);
+        }
+      } else {
+        console.warn(`Puppet of ${service}:${clientId} is not found`);
+      }
+      callback("ok");
+      socket.disconnect();
+    });
   }
 }

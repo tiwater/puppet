@@ -5,10 +5,7 @@ import { io as socketIOClient, Socket } from 'socket.io-client';
 import { PUPPET_SOCKET_PATH, PuppetEvent, PuppetLoginStatus } from '@/types/puppet-event';
 import QRCode from 'qrcode.react';
 import PuppetList from './components/puppetList';
-
-enum WebSocketServiceType {
-  ZionSupport = 1
-};
+import { WebSocketServiceType } from '@/types/websocket';
 
 const PuppetLogin = () => {
   const [message, setMessage] = useState('');
@@ -26,7 +23,7 @@ const PuppetLogin = () => {
       setQrCode('');
       setMessage('二维码失效');
       socket.disconnect();
-    }, 60000);
+    }, 1800000);
     timoutTracker = tracker;
 
   }

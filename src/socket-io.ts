@@ -19,19 +19,11 @@ io.on('connection', (socket: Socket) => {
   // Handle im client connection
   socket.on(PuppetEvent.clientRequestPuppet, (serviceId: WebSocketServiceType, clientId: string) => {
     if (serviceId === WebSocketServiceType.ZionSupport) {
-      PuppetService.getInstance().createPuppet(serviceId, clientId, socket);
+      PuppetService.getInstance(serviceId).createPuppet(serviceId, clientId, socket);
     }
   });
 
-  socket.on(ControllerEvent.requestPuppets, (callback) => {
-    callback(PuppetService.getInstance().getPuppets().map((v) => {
-      return {
-        clientId: v.clientId,
-        state: v.state,
-      };
-    }));
-    socket.disconnect();
-  });
+  PuppetService.handleServiceRequest(socket);
 
   socket.on('disconnect', () => {
     console.log('Socket.IO client disconnected');

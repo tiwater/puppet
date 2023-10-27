@@ -1,13 +1,23 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { io as socketIOClient, Socket } from 'socket.io-client';
-import { PUPPET_SOCKET_PATH, PuppetEvent, ControllerEvent } from '@/types/puppet-event';
+import { PUPPET_SOCKET_PATH, ControllerEvent } from '@/types/puppet-event';
+
+// Avoid the build timeout
+export const dynamic = 'force-dynamic';
 
 /**
  * @openapi
- * /api/puppet/clients:
+ * /api/puppet/{service}/clients:
  *   get:
  *     summary: Get connected puppets list
+ *     parameters:
+ *       - name: service
+ *         in: path
+ *         required: true
+ *         description: The service ID of clients belong to
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: An array of puppets
@@ -16,13 +26,13 @@ import { PUPPET_SOCKET_PATH, PuppetEvent, ControllerEvent } from '@/types/puppet
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/EmbeddingDocumentChunk'
+ *                 $ref: '#/components/schemas/Puppet'
  *       400:
  *         description: No query condition provided
  *       500:
  *         description: Internal server error
  */
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, { params }: { params: { service: string } }) {
   // try {
   //   const pb = await loadAuthFromAllChannels(req.headers);
   //   const userId = pb.authStore?.model?.id;
@@ -36,12 +46,8 @@ export async function GET(req: NextRequest) {
   //   return new NextResponse(`Error: ${error.message}`, { status: 500 });
   // }
 
-  // return NextResponse.json([{
-  //   clientId: '1',
-  //   state: 'connected',
-  // }]);
 
-
+  const { service } = params;
   const url = process.env.NEXT_PUBLIC_TITAN_SERVICE || 'http://localhost:7000';
   const socket: Socket = socketIOClient(url, {
     path: PUPPET_SOCKET_PATH
@@ -49,9 +55,9 @@ export async function GET(req: NextRequest) {
 
   return new Promise((resolve) => {
     socket.on('connect', () => {
-      socket.timeout(5000).emit(ControllerEvent.requestPuppets, (err, puppets) => {
+      socket.timeout(5000).emit(ControllerEvent.listPuppets, service, (err: any, puppets: any) => {
         if(err){
-          resolve(NextResponse.error(new Error(`Socket error: ${err}`)));
+          resolve(new NextResponse(`Request error: ${err}`, { status: 500 }));
         } else {
           const response = NextResponse.json(puppets);
           socket.disconnect();
@@ -62,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     // Handle socket error (optional)
     socket.on('error', (error) => {
-      resolve(NextResponse.error(new Error(`Socket error: ${error}`)));
+      resolve(new NextResponse(`Socket error: ${error}`, { status: 500 }));
     });
   });
 }

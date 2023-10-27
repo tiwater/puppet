@@ -4,11 +4,6 @@ import { ProcessMessage } from '../../types/process';
 import { CustomerSupportService } from '../customer-support';
 import { PuppetEvent, PuppetLoginStatus } from '../../types/puppet-event';
 
-// Token for wechaty
-const token = 'puppet_workpro_4a075759562f477aaab5985e0c498978';
-// const tokens = ['puppet_workpro_4a075759562f477aaab5985e0c498978',
-// 'puppet_workpro_c0316288a73343cba983ed1a9d5dc179']
-
 const getQrcodeKey = (urlStr: string) => {
   const url = new URL(urlStr);
   return url.searchParams.get('key');
@@ -30,7 +25,6 @@ class PuppetWorker {
       name: clientId,
       puppet: '@juzi/wechaty-puppet-service',
       puppetOptions: {
-        name: clientId,
         token,
         tls: {
           disable: true
@@ -105,6 +99,9 @@ class PuppetWorker {
           // 错误关键词：验证码错误次数超过阈值，请重新扫码'
           // 目前不会推送 EXPIRED 事件，需要根据错误内容判断
         }
+      } else if(message.type === PuppetEvent.clientRequestLogout){
+        // Logout
+        await this.puppet.logout();
       }
     });
 

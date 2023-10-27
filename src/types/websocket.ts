@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 
 export enum WebSocketServiceType {
-  ZionSupport = 1
+  ZionSupport = "zionSupport",
 };
 
 export enum WebSocketServiceStatus {
