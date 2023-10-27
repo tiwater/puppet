@@ -2,7 +2,7 @@
 import { Server, Socket } from 'socket.io';
 import { WebSocketServiceType } from './types/websocket';
 import { PuppetService } from './services/puppet';
-import { PUPPET_SOCKET_PATH, PuppetEvent } from './types/puppet-event';
+import { ControllerEvent, PUPPET_SOCKET_PATH, PuppetEvent } from './types/puppet-event';
 
 const io = new Server({
   path: PUPPET_SOCKET_PATH,  // Distinguish the websocket services
@@ -21,6 +21,16 @@ io.on('connection', (socket: Socket) => {
     if (serviceId === WebSocketServiceType.ZionSupport) {
       PuppetService.getInstance().createPuppet(serviceId, clientId, socket);
     }
+  });
+
+  socket.on(ControllerEvent.requestPuppets, (callback) => {
+    callback(PuppetService.getInstance().getPuppets().map((v) => {
+      return {
+        clientId: v.clientId,
+        state: v.state,
+      };
+    }));
+    socket.disconnect();
   });
 
   socket.on('disconnect', () => {

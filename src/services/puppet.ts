@@ -104,15 +104,19 @@ export class Puppet {
         // Report verify result
         console.log('login status:', message.data);
         // Tell the login client
-        this.state = message.data;
         this.socket?.emit(PuppetEvent.puppetLoginStatus, message.data);
         if(message.data == PuppetLoginStatus.login){
           // Verify code passed, disable the timeout, so the puppet will serve for the customer
           PuppetService.getInstance().disableTimeout(this.clientId);
         } else if(message.data == PuppetLoginStatus.logout){
-          // Logout
-          PuppetService.getInstance().destoryPuppet(this.clientId);
+          if(this.state == PuppetLoginStatus.login){
+            // Logout
+            PuppetService.getInstance().destoryPuppet(this.clientId);
+          } else {
+            // Just status update after connect, wait for later event
+          }
         }
+        this.state = message.data;
       } else if(message.type == PuppetEvent.puppetError){
         // Tell the login client
         this.socket?.emit(PuppetEvent.puppetError, message.data);
@@ -218,5 +222,10 @@ export class PuppetService {
       clearTimeout(timeout);
       this.timeouts.delete(clientId);
     }
+  }
+
+  getPuppets(): Puppet[] {
+    // Return the values of puppets as an array
+    return Array.from(this.puppets.values());
   }
 }

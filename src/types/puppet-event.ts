@@ -10,6 +10,10 @@ export enum PuppetEvent {
   puppetError = 'puppet-error',
 }
 
+export enum ControllerEvent {
+  requestPuppets = 'request-puppets',
+}
+
 export enum PuppetLoginStatus {
   pending = 'pending',
   login = 'login',

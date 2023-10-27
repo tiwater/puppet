@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { io as socketIOClient, Socket } from 'socket.io-client';
 import { PUPPET_SOCKET_PATH, PuppetEvent, PuppetLoginStatus } from '@/types/puppet-event';
 import QRCode from 'qrcode.react';
+import PuppetList from './components/puppetList';
 
 enum WebSocketServiceType {
   ZionSupport = 1
@@ -137,7 +138,7 @@ const PuppetLogin = () => {
   };
 
   return (
-    <div className="w-full h-full flex p-2 gap-2">
+    <div className="w-full h-full flex flex-col p-2 gap-2">
       <div className="relative flex flex-col items-center w-full bg-gray-800 rounded-md">
         <div className="relative flex items-center rounded-md px-2 py-2 gap-2">
             <span>用户</span>
@@ -168,9 +169,10 @@ const PuppetLogin = () => {
           </div>
         )}
         {allowRefresh &&
-          <button onClick={refreshQrCode} className="bg-primary text-white px-2 py-1 rounded">刷新</button>
+          <button onClick={refreshQrCode} className="bg-primary text-white px-2 py-1 rounded">刷新二维码</button>
         }
       </div>
+      <PuppetList/>
     </div>
   );
 };
