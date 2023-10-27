@@ -2,10 +2,10 @@
 import { Server, Socket } from 'socket.io';
 import { WebSocketServiceType } from './types/websocket';
 import { PuppetService } from './services/puppet';
-import { PUPPET_SERVICE_PATH, PuppetEvent } from './types/puppet-event';
+import { PUPPET_SOCKET_PATH, PuppetEvent } from './types/puppet-event';
 
 const io = new Server({
-  path: PUPPET_SERVICE_PATH,  // Distinguish the websocket services
+  path: PUPPET_SOCKET_PATH,  // Distinguish the websocket services
   serveClient: false,
   cors: {
     origin: ['http://localhost:666', 'https://demo.penless.ai'],

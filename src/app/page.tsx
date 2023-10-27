@@ -16,7 +16,7 @@ export default function Home() {
       type: 'web',
       description:
         'Client service as Wechat bot.',
-      link: '/wechaty-puppet',
+      link: '/puppet',
     },
   ];
 

@@ -1,4 +1,4 @@
-export const PUPPET_SERVICE_PATH = '/puppet';
+export const PUPPET_SOCKET_PATH = '/puppet-socket';
 
 export enum PuppetEvent {
   clientRequestPuppet = 'client-request-puppet',  // Need to submit serviceId and clientId

@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { io as socketIOClient, Socket } from 'socket.io-client';
-import { PUPPET_SERVICE_PATH, PuppetEvent, PuppetLoginStatus } from '@/types/puppet-event';
+import { PUPPET_SOCKET_PATH, PuppetEvent, PuppetLoginStatus } from '@/types/puppet-event';
 import QRCode from 'qrcode.react';
 
 enum WebSocketServiceType {
   ZionSupport = 1
 };
 
-const WechatyPuppet = () => {
+const PuppetLogin = () => {
   const [message, setMessage] = useState('');
   const [qrcode, setQrCode] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -17,7 +17,7 @@ const WechatyPuppet = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [clientId, setClientId] = useState('');
   const [allowRefresh, setAllowRefresh] = useState(false);
-  const [timoutTracker, setTimoutTracker] = useState<any>(null);
+  let timoutTracker: any;
 
   const initTimeoutTracker = (socket: Socket)=>{
 
@@ -25,8 +25,8 @@ const WechatyPuppet = () => {
       setQrCode('');
       setMessage('二维码失效');
       socket.disconnect();
-    }, 180000);
-    setTimoutTracker(tracker);
+    }, 60000);
+    timoutTracker = tracker;
 
   }
 
@@ -34,8 +34,16 @@ const WechatyPuppet = () => {
 
     if(timoutTracker){
       clearTimeout(timoutTracker);
-      setTimoutTracker(null);
+      timoutTracker = null;
     }
+  }
+
+  const clearStatus = ()=>{
+    socket?.disconnect();
+    setSocket(null);
+    setQrCode('');
+    setVerifyLogin(false);
+    clearTimeoutTracker();
   }
   
   const initSocket = () => {
@@ -45,7 +53,7 @@ const WechatyPuppet = () => {
 
     const url = process.env.NEXT_PUBLIC_TITAN_SERVICE || 'http://localhost:7000';
     const newSocket: Socket = socketIOClient(url, {
-      path: PUPPET_SERVICE_PATH
+      path: PUPPET_SOCKET_PATH
     });
 
     const serviceId = WebSocketServiceType.ZionSupport;
@@ -81,28 +89,25 @@ const WechatyPuppet = () => {
 
     newSocket.on(PuppetEvent.puppetLoginStatus, (result) => {
       if(result == PuppetLoginStatus.login) {
-        setMessage('成功登录');
-        newSocket.disconnect();
-        setSocket(null);
-        setQrCode('');
-        setVerifyLogin(false);
-        clearTimeoutTracker();
+        setMessage('已成功登录');
+        clearStatus();
       } else if(result == PuppetLoginStatus.logout){
-        setMessage(`退出登录`);
+        setMessage(`已退出登录`);
       }
     });
 
     newSocket.on(PuppetEvent.puppetError, (err) => {
-      setMessage('出错了，请重试');
-      newSocket.disconnect();
-      setSocket(null);
-      setQrCode('');
-      setVerifyLogin(false);
-      clearTimeoutTracker();
+      if(err == 'No available headcount'){
+        setMessage('超出连接限额，请购买更多额度或退出当前连接');
+      } else {
+        setMessage('出错了，请重试');
+      }
+      clearStatus();
     });
 
     newSocket.on('disconnect', () => {
       console.log('Socket.IO disconnected');
+      clearTimeoutTracker();
     });
 
     setSocket(newSocket);
@@ -149,7 +154,6 @@ const WechatyPuppet = () => {
         {qrcode && (
           <div>
               <QRCode value={qrcode} size={256} />
-              {message === '二维码失效' && <span className="absolute top-0 left-0">二维码失效</span>}
           </div>
         )}
         <span>{message}</span>
@@ -171,4 +175,4 @@ const WechatyPuppet = () => {
   );
 };
 
-export default WechatyPuppet;
+export default PuppetLogin;
