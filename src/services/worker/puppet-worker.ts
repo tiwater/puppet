@@ -15,6 +15,8 @@ class PuppetWorker {
   qrcodeKey: string = '';
   private lastVerifyCodeId: string = '';
   private chatService: CustomerSupportService | undefined;
+  private autoLogin: boolean = false;
+  private manualLogin: boolean = false;
 
   constructor(){
     const clientId = process.argv[3];
@@ -45,6 +47,7 @@ class PuppetWorker {
       if (status === ScanStatus.Waiting) {
         this.qrcodeKey = getQrcodeKey(qrcode) || '';
       }
+      this.manualLogin = true;
       // Send qrCode to the PuppetService and then return to the user
       (process as any)?.send({ type: PuppetEvent.puppetDispatchAuthToken, data: qrcode });
     }).on('verify-code', async (id: string, message: string, scene: types.VerifyCodeScene, status: types.VerifyCodeStatus) => {
@@ -55,14 +58,20 @@ class PuppetWorker {
         this.lastVerifyCodeId = id;
         (process as any)?.send({ type: PuppetEvent.puppetRequestVerifyCode });
       }
-    }).on('login', user => {
+    }).on('login', async (user) => {
       console.log(`
       ============================================
       user: ${JSON.stringify(user)}, friend: ${user.friend()}, ${user.coworker()}
       ============================================
-      `)
-      this.chatService = new CustomerSupportService();
-      (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: PuppetLoginStatus.login });
+      `);
+      if(!this.autoLogin && !this.manualLogin){
+        // Not auto login but already logged in without manually scanned the qrCode
+        // Logout
+        await this.puppet.logout();
+      } else {
+        this.chatService = new CustomerSupportService();
+        (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: PuppetLoginStatus.login });
+      }
     }).on('logout', (user) => {
       console.log(`user ${user} logout`);
       (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: PuppetLoginStatus.logout });
