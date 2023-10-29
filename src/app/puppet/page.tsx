@@ -23,7 +23,7 @@ const PuppetLogin = () => {
       setQrCode('');
       setMessage('二维码失效');
       socket.disconnect();
-    }, 1800000);
+    }, 180000);
     timoutTracker = tracker;
 
   }
@@ -105,6 +105,7 @@ const PuppetLogin = () => {
 
     newSocket.on('disconnect', () => {
       console.log('Socket.IO disconnected');
+      setQrCode('');
       clearTimeoutTracker();
     });
 

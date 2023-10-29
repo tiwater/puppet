@@ -203,7 +203,7 @@ export class PuppetService {
         // Terminate the child process in 3 minutes by default
         const timeout = setTimeout(() => {
           this.destroyPuppet(clientId);
-        }, 30 * 60 * 1000);
+        }, 3 * 60 * 1000);
         this.timeouts.set(clientId, timeout);
       } else {
         socket.emit(PuppetEvent.puppetError, 'No available headcount');
