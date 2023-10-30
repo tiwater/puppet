@@ -1,4 +1,5 @@
 import { ChatService } from './chat';
+import { callPenlessApi } from '../utils/penless-api';
 
 export class CustomerSupportService extends ChatService {
 
@@ -7,7 +8,11 @@ export class CustomerSupportService extends ChatService {
     super(prompt);
   }
 
-  async say(message: string, conversationId: string):Promise<string>{
-    return `Are you asking about ${message}`;
+  async say(message: string, conversationId: string): Promise<string> {
+    const reply = await callPenlessApi('/users26684/ZionSupport', {
+      question: message,
+      conversationId: conversationId
+    })
+    return reply.answer;
   }
 }

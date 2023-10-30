@@ -75,8 +75,26 @@ class PuppetWorker {
     }).on('logout', (user) => {
       console.log(`user ${user} logout`);
       (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: { status: PuppetLoginStatus.logout } });
-    }).on('message', 
-      this.onMessage
+    }).on('message', async (message: MessageInterface)=>{
+      console.log(`new message received: ${JSON.stringify(message)}`);
+      if(this.chatService){
+        if(!message.self()){
+          const sender = message.talker();
+          let conversationId;
+          if(message.room()){
+            conversationId = message.room()?.id ?? '';
+          } else {
+            conversationId = sender.id;
+          }
+          // Not myself's words
+          try{
+            await message.say(await this.chatService.say(message.text(), conversationId));
+          } catch(error){
+            console.error(error);
+          }
+        }
+      }
+    }
     ).on('error', err => {
       console.error(err);
       (process as any)?.send({ type: PuppetEvent.puppetError, data: err });
@@ -120,18 +138,6 @@ class PuppetWorker {
       (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: PuppetLoginStatus.logout });
       this.puppet.stop();
     });
-  }
-
-  // On receive puppet message
-  async onMessage(message: MessageInterface){
-    console.log(`new message received: ${JSON.stringify(message)}`);
-    if(this.chatService){
-      const sender = message.talker();
-      if(!message.self()){
-        // Not myself's words
-        // await message.say(await this.chatService.say(message.text(), `${message.room()?.id ?? ''}_${sender.id}`));
-      }
-    }
   }
 
   init(){

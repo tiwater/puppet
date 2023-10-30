@@ -1,3 +1,5 @@
+import { callPenlessApi } from '../utils/penless-api';
+
 export class ChatService {
 
   prompt: string = '';
@@ -6,7 +8,7 @@ export class ChatService {
     this.prompt = prompt;
   }
 
-  say(message: string, conversationId: string){
-
+  async say(message: string, conversationId: string): Promise<string> {
+    throw new Error('Not implemented');
   }
 }
