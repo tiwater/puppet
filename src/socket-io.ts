@@ -24,6 +24,7 @@ io.on('connection', (socket: Socket) => {
 
     if (rawCookies) {
 
+      // Cannot call pocketbase in the websocket server, have to parse the cookies to get the user info
       const cookies = await parseCookies(rawCookies);
       const authInfo = cookies['pb_auth'];
       if (authInfo) {

@@ -2,6 +2,9 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { io as socketIOClient, Socket } from 'socket.io-client';
 import { PUPPET_SOCKET_PATH, ControllerEvent } from '@/types/puppet-event';
+import { Puppet } from '@/services/puppet';
+import { loadAuthFromAllChannels } from '@/utils/load-auth-from-cookie';
+import { getUserInfoList } from '@/utils/pocketbase';
 
 // Avoid the build timeout
 export const dynamic = 'force-dynamic';
@@ -33,18 +36,6 @@ export const dynamic = 'force-dynamic';
  *         description: Internal server error
  */
 export async function GET(req: NextRequest, { params }: { params: { service: string } }) {
-  // try {
-  //   const pb = await loadAuthFromAllChannels(req.headers);
-  //   const userId = pb.authStore?.model?.id;
-  //   if (userId) {
-  //     return NextResponse.json(documents);
-  //   } else {
-  //     throw new Error('User not authenticated');
-  //   }
-  // } catch (error: any) {
-  //   console.error('An error occurred:', error);
-  //   return new NextResponse(`Error: ${error.message}`, { status: 500 });
-  // }
 
 
   const { service } = params;
@@ -55,13 +46,32 @@ export async function GET(req: NextRequest, { params }: { params: { service: str
 
   return new Promise((resolve) => {
     socket.on('connect', () => {
-      socket.timeout(5000).emit(ControllerEvent.listPuppets, service, (err: any, puppets: any) => {
+      socket.timeout(5000).emit(ControllerEvent.listPuppets, service, async (err: any, puppets: Puppet[]) => {
         if(err){
           resolve(new NextResponse(`Request error: ${err}`, { status: 500 }));
         } else {
-          const response = NextResponse.json(puppets);
-          socket.disconnect();
-          resolve(response);
+          try {
+            const pb = await loadAuthFromAllChannels(req.headers);
+            const userId = pb.authStore?.model?.id;
+            if (userId) {
+
+              const users = await getUserInfoList(puppets.map((p) => p.clientId));
+              
+              const combinedArray = users.flatMap(user =>
+                puppets
+                  .filter(puppet => puppet.clientId === user.id)
+                  .map(puppet => ({ user, puppet }))
+              );
+  
+              const response = NextResponse.json(combinedArray);
+              socket.disconnect();
+              resolve(response);
+            } else {
+              resolve(new NextResponse(`User not authenticated`, { status: 404 }));
+            }
+          } catch (error: any) {
+            resolve(new NextResponse(`Request error: ${error}`, { status: 500 }));
+          }
         }
       });
     });

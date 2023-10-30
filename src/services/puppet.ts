@@ -4,6 +4,7 @@ import { ProcessManager } from './process-manager';
 import { ProcessMessage } from '../types/process';
 import { Socket } from 'socket.io';
 import { ControllerEvent, PuppetEvent, PuppetLoginStatus } from '../types/puppet-event';
+import { ContactSelfInterface } from '@juzi/wechaty/impls';
 
 class Token {
   value: string;
@@ -51,6 +52,7 @@ export class Puppet {
   process: ChildProcess;
   token: string;
   state: PuppetLoginStatus = PuppetLoginStatus.pending;
+  user: ContactSelfInterface | undefined;
 
   constructor(serviceId: WebSocketServiceType, clientId: string, socket: Socket, 
     token: string, process: ChildProcess){
@@ -104,19 +106,21 @@ export class Puppet {
         // Report verify result
         console.log('login status:', message.data);
         // Tell the login client
-        this.socket?.emit(PuppetEvent.puppetLoginStatus, message.data);
-        if(message.data == PuppetLoginStatus.login){
+        this.socket?.emit(PuppetEvent.puppetLoginStatus, message.data.status);
+        if(message.data.status == PuppetLoginStatus.login){
           // Verify code passed, disable the timeout, so the puppet will serve for the customer
           PuppetService.getInstance(this.serviceId).disableTimeout(this.clientId);
-        } else if(message.data == PuppetLoginStatus.logout){
+          this.user = message.data.user;
+        } else if(message.data.status == PuppetLoginStatus.logout){
+          this.user = undefined;
           if(this.state == PuppetLoginStatus.login){
-            // Logout
+            // Previous status is login, now we should logout, so destroy the puppet
             PuppetService.getInstance(this.serviceId).destroyPuppet(this.clientId);
           } else {
             // Just status update after connect, wait for later event
           }
         }
-        this.state = message.data;
+        this.state = message.data.status;
       } else if(message.type == PuppetEvent.puppetError){
         // Tell the login client
         this.socket?.emit(PuppetEvent.puppetError, message.data);
@@ -252,6 +256,7 @@ export class PuppetService {
         return {
           clientId: v.clientId,
           state: v.state,
+          user: v.user
         };
       }));
       socket.disconnect();

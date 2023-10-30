@@ -70,11 +70,11 @@ class PuppetWorker {
         await this.puppet.logout();
       } else {
         this.chatService = new CustomerSupportService();
-        (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: PuppetLoginStatus.login });
+        (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: { status: PuppetLoginStatus.login, user: user } });
       }
     }).on('logout', (user) => {
       console.log(`user ${user} logout`);
-      (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: PuppetLoginStatus.logout });
+      (process as any)?.send({ type: PuppetEvent.puppetLoginStatus, data: { status: PuppetLoginStatus.logout } });
     }).on('message', 
       this.onMessage
     ).on('error', err => {

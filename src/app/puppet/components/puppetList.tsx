@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Puppet } from '@/services/puppet';
 import { WebSocketServiceType } from '@/types/websocket';
+import { UserInfo } from '@/types/user';
+import { PuppetLoginStatus } from '@/types/puppet-event';
 
 const PuppetList = () => {
-  const [puppets, setPuppets] = useState<Puppet[]>([]);
+  const [puppets, setPuppets] = useState<{user: UserInfo, puppet: Puppet}[]>([]);
 
   useEffect(() => {
     fetchPuppets();
@@ -11,8 +13,12 @@ const PuppetList = () => {
 
   async function fetchPuppets() {
     const response = await fetch(`/api/puppet/${WebSocketServiceType.ZionSupport}/clients`);
-    const data = await response.json();
-    setPuppets(data);
+    if(response.ok){
+      const data = await response.json();
+      setPuppets(data);
+    } else {
+      console.error(`Error because of ${response.statusText}`);
+    }
   }
 
   async function deletePuppet(id: string) {
@@ -25,23 +31,28 @@ const PuppetList = () => {
     <table className="w-full bg-gray-800 rounded-md">
       <thead>
         <tr>
-          <th className="text-center">Client ID</th>
+          <th className="text-center">Penless Account</th>
           <th className="text-center">State</th>
+          <th className="text-center">IM Account</th>
           <th className="text-center">Action</th>
         </tr>
       </thead>
       <tbody>
         {
           puppets.map((puppet) => (
-            <tr key={puppet.clientId}>
-              <td className="text-center">{puppet.clientId}</td>
-              <td className="text-center">{puppet.state}</td>
+            <tr key={puppet.user.id}>
+              <td className="text-center">{puppet.user.name ?? puppet.user.username}</td>
+              <td className="text-center">{puppet.puppet.state}</td>
+              <td className="text-center">{puppet.puppet.state == PuppetLoginStatus.login ? 
+                `${puppet.puppet.user?.payload?.name} (${puppet.puppet.user?.payload?.handle})`
+                : ''}
+              </td>
               <td className="text-center">
                 <button
-                  onClick={() => deletePuppet(puppet.clientId)}
+                  onClick={() => deletePuppet(puppet.user.id)}
                   className="bg-primary text-white px-2 py-1 rounded"
                 >
-                  删除
+                  退出
                 </button>
               </td>
             </tr>

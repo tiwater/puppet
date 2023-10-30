@@ -89,8 +89,10 @@ const PuppetLogin = () => {
       if(result == PuppetLoginStatus.login) {
         setMessage('已成功登录');
         clearStatus();
+        setAllowRefresh(false);
       } else if(result == PuppetLoginStatus.logout){
         setMessage(`已退出登录`);
+        setAllowRefresh(true);
       }
     });
 
