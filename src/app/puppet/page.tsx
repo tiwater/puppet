@@ -14,7 +14,7 @@ const PuppetLogin = () => {
   const [verifyLogin, setVerifyLogin] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [clientId, setClientId] = useState('');
-  const [allowRefresh, setAllowRefresh] = useState(false);
+  const [allowRefresh, setAllowRefresh] = useState(true);
   let timoutTracker: any;
 
   const initTimeoutTracker = (socket: Socket)=>{
@@ -60,7 +60,7 @@ const PuppetLogin = () => {
       console.log('Socket.IO connected');
       // TODO: Get userId
 
-      newSocket.emit(PuppetEvent.clientRequestPuppet, serviceId, clientId);
+      newSocket.emit(PuppetEvent.clientRequestPuppet, serviceId);
       initTimeoutTracker(newSocket);
     });
 
@@ -117,6 +117,10 @@ const PuppetLogin = () => {
     };
   };
 
+  useEffect(() => {
+    return initSocket();
+  }, []);
+
   const submitVerificationCode = () => {
     if(socket) {
       socket.emit(PuppetEvent.clientSubmitVerifyCode, verificationCode);
@@ -128,10 +132,6 @@ const PuppetLogin = () => {
     setVerificationCode('');
     setMessage('');
     setQrCode('');
-    if(!clientId || clientId.trim() == ''){
-      alert('请输入手机号或微信号！');
-      return;
-    }
     initSocket();
   };
 
@@ -139,16 +139,7 @@ const PuppetLogin = () => {
     <div className="w-full h-full flex flex-col p-2 gap-2">
       <div className="relative flex flex-col items-center w-full bg-gray-800 rounded-md">
         <div className="relative flex items-center rounded-md px-2 py-2 gap-2">
-            <span>用户</span>
-            <input
-              type="text"
-              value={clientId}
-              placeholder='请输入手机号或微信号'
-              onChange={(e) => setClientId(e.target.value)}
-              />
-            <button onClick={refreshQrCode} className="bg-primary text-white px-2 py-1 rounded">
-              确定
-            </button>
+            <span>扫描二维码以登录</span>
         </div>
         {qrcode && (
           <div>

@@ -2,7 +2,8 @@
 import { Server, Socket } from 'socket.io';
 import { WebSocketServiceType } from './types/websocket';
 import { PuppetService } from './services/puppet';
-import { ControllerEvent, PUPPET_SOCKET_PATH, PuppetEvent } from './types/puppet-event';
+import { PUPPET_SOCKET_PATH, PuppetEvent } from './types/puppet-event';
+import { parseCookies } from './utils/cookie';
 
 const io = new Server({
   path: PUPPET_SOCKET_PATH,  // Distinguish the websocket services
@@ -17,10 +18,30 @@ const io = new Server({
 io.on('connection', (socket: Socket) => {
   console.log('Socket.IO client connected');
   // Handle im client connection
-  socket.on(PuppetEvent.clientRequestPuppet, (serviceId: WebSocketServiceType, clientId: string) => {
-    if (serviceId === WebSocketServiceType.ZionSupport) {
-      PuppetService.getInstance(serviceId).createPuppet(serviceId, clientId, socket);
+  socket.on(PuppetEvent.clientRequestPuppet, async (serviceId: WebSocketServiceType) => {
+    // Extract the pb_auth cookie from the websocket request
+    const rawCookies = socket.handshake.headers['cookie'];
+
+    if (rawCookies) {
+
+      const cookies = await parseCookies(rawCookies);
+      const authInfo = cookies['pb_auth'];
+      if (authInfo) {
+        const authEntity = JSON.parse(authInfo);
+        const userId = authEntity.model.id;
+        if(userId && userId.trim() != ''){
+          console.log(`Setup puppet request for client ${userId}`);
+          if (serviceId === WebSocketServiceType.ZionSupport) {
+            PuppetService.getInstance(serviceId).createPuppet(serviceId, userId, socket);
+            return;
+          } else {
+            socket.emit(PuppetEvent.puppetError, 'No puppet for this service');
+            return;
+          }
+        }
+      }
     }
+    socket.emit(PuppetEvent.puppetError, 'No authentication information');
   });
 
   PuppetService.handleServiceRequest(socket);
