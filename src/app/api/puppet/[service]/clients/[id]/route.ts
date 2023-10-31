@@ -16,7 +16,6 @@ import { PUPPET_SOCKET_PATH, PuppetEvent, ControllerEvent } from '@/types/puppet
  *         description: The service ID of clients belong to
  *         schema:
  *           type: string
- *     parameters:
  *       - name: id
  *         in: path
  *         required: true
