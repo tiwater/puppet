@@ -9,7 +9,7 @@ const io = new Server({
   path: PUPPET_SOCKET_PATH,  // Distinguish the websocket services
   serveClient: false,
   cors: {
-    origin: ['https://app.penless.ai', 'https://app.penless.cn', 'http://localhost:4000'],
+    origin: ['https://titan.penless.ai', 'https://titan.penless.cn', 'http://localhost:4000'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
   }
