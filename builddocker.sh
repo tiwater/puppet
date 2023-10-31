@@ -1,0 +1,1 @@
+docker build -t tiwater/node_env:1.0 .
