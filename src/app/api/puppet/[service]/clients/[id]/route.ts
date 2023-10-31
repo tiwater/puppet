@@ -39,7 +39,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { service: 
 
   const { service, id } = params;
 
-  const url = process.env.NEXT_PUBLIC_TITAN_SERVICE || 'http://localhost:7000';
+  const url = process.env.NEXT_PUBLIC_PUPPET_SERVER_URL || 'http://localhost:7000';
   const socket: Socket = socketIOClient(url, {
     path: PUPPET_SOCKET_PATH
   });

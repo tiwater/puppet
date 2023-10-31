@@ -41,7 +41,7 @@ const PuppetList = () => {
         {
           puppets.map((puppet) => (
             <tr key={puppet.user.id}>
-              <td className="text-center">{puppet.user.name ?? puppet.user.username}</td>
+              <td className="text-center">{(puppet.user.name && puppet.user.name.trim()!='') ? puppet.user.name : puppet.user.email}</td>
               <td className="text-center">{puppet.puppet.state}</td>
               <td className="text-center">{puppet.puppet.state == PuppetLoginStatus.login ? 
                 `${puppet.puppet.user?.payload?.name} (${puppet.puppet.user?.payload?.handle})`
